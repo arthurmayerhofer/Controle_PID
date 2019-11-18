@@ -1,28 +1,27 @@
 #include <NewPing.h>
 
 //pinos do ultrassônico e distância máxima(range)
-#define trigger 6
-#define echo 9
+#define trigger 3
+#define echo 5
 #define range 200
 
 NewPing sensor(trigger, echo, range);
 
 //pinos potênciometros
 int pot_kp = A0;
-int pot_ki = A1;
-int pot_kd = A2;
-int pot_set = A3;
+int pot_ki = A2;
+int pot_kd = A4;
+int pot_set = A6;
 
 // pinos da ponte H
-int in3 = 2;
-int in4 = 3;
-int pwm_pin = 10;
+int in3 = 7;
+int in4 = 9;
+int pwm_pin = 11;
 
 double setpoint;
 double distance;
 double height;
 float velocity;
-float velmin = 145;
 
 double pipe = 41; //medido com sensor na posição do projeto
 double object = 6;
@@ -62,9 +61,6 @@ void loop() {
   double ki = map(analogRead(pot_ki), 0, 1023, 0, 70) * 0.01;
   double kd = map(analogRead(pot_kd), 0, 1023, 0, 15) * 0.01;
   double setpoint = map(analogRead(pot_set), 0, 1023, 0, 40);
-//  kp = kp * 0.1;
-//  ki = ki * 0.01;
-//  kd = kd * 0.01;
 
 //  setpoint = 10; //altura desejada
   
