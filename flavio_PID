@@ -1,0 +1,165 @@
+//inclusão biblioteca do sensor ultrassônico   
+#include <NewPing.h>
+
+//pinos do ultrassônico 
+#define trigger 3
+#define echo 5
+
+//distância máxima (range)
+#define range 200
+
+//definição do objeto da 
+NewPing sensor(trigger, echo, range);
+
+//pinos analógicos dos potênciometros
+int pot_kp = A0;
+int pot_ki = A2;
+int pot_kd = A4;
+int pot_set = A6;
+
+// pinos da ponte H
+int in3 = 7;
+int in4 = 9;
+int pwm_pin = 11;
+
+double setpoint;
+double distance;
+double height;
+float velocity; // saída do controle PID
+
+double tubo = 39; //medido com sensor na posição do projeto
+double object = 5;
+
+double pastTime;
+unsigned long presentTime, lastTime;
+
+double error;
+double i_error;
+double d_error;
+double lastError;
+
+//PI -- Kp = 6, Ki= 5. 
+//PD -- Kp = 5.7, Kd= 0.7 
+//PID -- Kp = 6, Ki= 5, Kd = 0.3
+
+//double kp = 6; 
+//double ki = 5; 
+//double kd = 0.3;
+
+void setup() { 
+
+  //definição da velocidade da leitura serial
+  Serial.begin(9600);
+
+  //definição dos sinais de saída 
+  pinMode(in3, OUTPUT);
+  pinMode(in4, OUTPUT);
+  pinMode(pwm_pin, OUTPUT);
+  
+  //definição dos sinais de entrada
+  pinMode(pot_kp, INPUT);
+  pinMode(pot_ki, INPUT);
+  pinMode(pot_kd, INPUT);
+  pinMode(pot_set, INPUT);
+
+  //definição das faixas de sinais ajustadas pelo potenciômetro
+  double kp = map(analogRead(pot_kp), 0, 1023, 0, 350) * 0.1; 
+  double ki = map(analogRead(pot_ki), 0, 1023, 0, 9) * 0.01;
+  double kd = map(analogRead(pot_kd), 0, 1023, 0, 100) * 0.1;
+  double setpoint = map(analogRead(pot_set), 0, 1023, 0, 40);
+}
+
+void loop() {
+ 
+  // definição dos intervalos de tempo da Integral pela função millis
+  pastTime = millis();
+  presentTime = pastTime - lastTime;
+
+  // definição da distância do sensor pela função ping
+  distance = sensor.ping_cm();
+
+ //altura em que o objeto se encontra
+  height = (tubo - distance); 
+
+ //erro proporcional
+  error = setpoint - height;
+
+  // erro integral (incrementa o erro proporcional pelo tempo)
+  i_error += error * presentTime;
+
+  // erro derivada 
+  d_error = (error - lastError)/presentTime;
+
+  // saída do PID              
+  velocity = kp*error + ki*i_error + kd*d_error;   
+
+  // atualiza erro e tempo para o próximo ciclo
+  lastError = error; 
+  lastTime = pastTime; 
+
+  // limitar a integral evitando saturação da velocidade
+  if (i_error > 50){
+    i_error = 25;
+  }
+
+  // limite da velocidade máxima
+  if (velocity > 255){
+    velocity = 255;
+  }
+
+ // limite da velocidade mínima
+    if (velocity < 0){
+    velocity = 0;
+  }
+
+  // limite da faixa de velocidade motor
+  velocity = map(velocity, 0, 255, 165, 255);
+
+  // executa função criada para ligar o motor
+  turnON();
+  
+  Serial.print("Velocity: ");
+  Serial.println(velocity);
+  Serial.println();
+
+  Serial.print("kp: ");
+  Serial.print(kp);
+  Serial.println();
+ 
+  Serial.print("ki: ");
+  Serial.print(ki, 3);
+  Serial.println();
+  
+  Serial.print("kd: ");
+  Serial.println(kd);
+  Serial.println();
+  
+  Serial.print("Distance: ");
+  Serial.print(distance);
+  Serial.print("cm");
+  Serial.println();
+  
+  Serial.print("Altura: ");
+  Serial.print(height);
+  Serial.print("cm");
+  Serial.println();
+ 
+  Serial.print("setpoint: ");
+  Serial.print(setpoint);
+  Serial.println("cm");
+
+  Serial.println();
+  Serial.print("Error: ");
+  Serial.print(error);
+  Serial.println("cm");
+ 
+}
+
+//função para ligar o cooler
+void turnON(){
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, HIGH);
+
+  // PWM varia velocidade conforme saída do PID
+  analogWrite(pwm_pin, velocity); 
+}
