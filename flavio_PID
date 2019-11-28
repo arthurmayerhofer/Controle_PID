@@ -38,14 +38,6 @@ double i_error;
 double d_error;
 double lastError;
 
-//PI -- Kp = 6, Ki= 5. 
-//PD -- Kp = 5.7, Kd= 0.7 
-//PID -- Kp = 6, Ki= 5, Kd = 0.3
-
-//double kp = 6; 
-//double ki = 5; 
-//double kd = 0.3;
-
 void setup() { 
 
   //definição da velocidade da leitura serial
